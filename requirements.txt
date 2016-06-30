@@ -1,0 +1,4 @@
+requests
+simple_model
+click
+Jinja2

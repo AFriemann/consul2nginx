@@ -1,0 +1,28 @@
+user nginx;
+worker_processes 1;
+
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+stream {
+    {% for protocol, port_groups in service_groups.items() %}{% for port, services in port_groups.items() %}{% for service in services %}
+    upstream {{ service.name }} {
+        least_conn;
+        {% for instance in service.instances %}
+        server {{ instance.Address }}:{{ instance.ServicePort }} max_fails=3 fail_timeout=60 weight=1;{% endfor %}
+    }
+    {% endfor %}{% endfor %}{% endfor %}
+
+    {% for protocol, port_groups in service_groups.items() %}{% for port, services in port_groups.items() %}
+    server {
+        listen   {{ port }} {{ protocol }};
+        {% for service in services %}
+        location /{{ service.name }} {
+            proxy_pass {{ service.name }};
+        }{% endfor %}
+    }{% endfor %}{% endfor %}
+}
