@@ -69,7 +69,7 @@ class Nginx:
     @staticmethod
     def check_file(path):
         try:
-            subprocess.check_call(['/sbin/nginx', '-t', '-c', path])
+            subprocess.check_call([os.environ.get('NGINX_BINARY', '/sbin/nginx'), '-t', '-c', path])
         except subprocess.CalledProcessError:
             raise NginxException('config file did not pass test')
 
