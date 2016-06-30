@@ -16,7 +16,8 @@ from jinja2 import Environment, FileSystemLoader
 
 logger = logging.getLogger(__name__)
 
-# Capture our current directory
+class NginxException(Exception):
+    pass
 
 class Nginx:
     @staticmethod
@@ -39,20 +40,21 @@ class Nginx:
         config = Nginx.get_template('nginx.conf.jinja2').render(service_groups=Nginx.group_services(services))
 
         if config is None:
-            raise Exception('config was None after creation')
+            raise NginxException('config was None after creation')
 
-        if Nginx.different(config, path):
-            logger.info('config file changed')
+        return config
 
-            if test:
-                logger.debug('testing created config file')
-                with tempfile.NamedTemporaryFile() as tmp:
-                    tmp.write(config.encode())
-                    Nginx.check_file(tmp.name)
+    @staticmethod
+    def update_config(config, path, test):
+        if test:
+            logger.debug('testing created config file')
+            with tempfile.NamedTemporaryFile() as tmp:
+                tmp.write(config.encode())
+                Nginx.check_file(tmp.name)
 
-            with open(path, 'wb') as result:
-                logger.debug('writing config to %s' % path)
-                result.write(config.encode())
+        with open(path, 'wb') as result:
+            logger.debug('writing config to %s' % path)
+            result.write(config.encode())
 
     @staticmethod
     def group_services(services):
@@ -70,13 +72,13 @@ class Nginx:
         try:
             subprocess.check_call(['/sbin/nginx', '-t', '-c', path])
         except subprocess.CalledProcessError:
-            raise Exception('config file did not pass test')
+            raise NginxException('config file did not pass test')
 
     @staticmethod
     def reload():
         try:
             subprocess.check_call(['service', 'nginx', 'reload'])
         except subprocess.CalledProcessError:
-            raise Exception('failed to reload nginx')
+            raise NginxException('failed to reload nginx')
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8

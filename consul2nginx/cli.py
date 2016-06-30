@@ -12,7 +12,7 @@
 import click, logging, time
 
 from .consul import Consul, Service
-from .nginx import Nginx
+from .nginx import Nginx, NginxException
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
     try:
         setup_logging(verbose, debug)
 
-        logger.info('creating consul client')
+        logger.debug('creating consul client')
 
         consul = Consul(host, port)
 
@@ -48,14 +48,21 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
             logger.error('failed to connect to consul API via %s:%s', host, port)
             return 1
 
+        if daemonize:
+            logger.info('checking %s:%s every %ss' % (host, port, timeout))
+
         while (True):
             logger.debug('creating nginx config from consul')
 
-            Nginx.create_config(output, consul.get_services(), test)
+            config = Nginx.create_config(output, consul.get_services(), test)
 
-            if reload:
-                logger.info('reloading nginx')
-                Nginx.reload()
+            if Nginx.different(config, output):
+                logger.info('config file changed')
+                Nginx.update_config(config, output, test)
+
+                if reload:
+                    logger.info('reloading nginx')
+                    Nginx.reload()
 
             if daemonize:
                 time.sleep(timeout)
@@ -63,9 +70,11 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
                 break
 
         return 0
+    except NginxException as e:
+        logger.error(e)
+        return 1
     except Exception as e:
         logger.exception(e)
-        print('unexpected Error: %s' % e)
         return 1
 
 if __name__ == '__main__':

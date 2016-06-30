@@ -17,7 +17,7 @@ except ImportError:
     from distutils.core import setup, find_packages
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname), encoding='utf8').read()
+    return open(os.path.join(os.path.dirname(__file__), fname), 'r').read()
 
 install_reqs = pip.req.parse_requirements('requirements.txt', session=pip.download.PipSession())
 
