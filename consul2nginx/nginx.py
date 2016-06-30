@@ -57,10 +57,10 @@ class Nginx:
 
     @staticmethod
     def group_services(services):
-        grouped_services = {'udp': {}, 'default': {}}
+        grouped_services = {'udp': {}, 'tcp': {}}
 
         for service in services:
-            protocol = 'udp' if 'udp' in service.tags else 'default'
+            protocol = 'udp' if 'udp' in service.tags else 'tcp'
             service_group = grouped_services[protocol].get(service.port, [])
             grouped_services[protocol].update({ service.port: service_group + [ service ] })
 

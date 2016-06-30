@@ -19,7 +19,7 @@ stream {
 
     {% for protocol, port_groups in service_groups.items() %}{% for port, services in port_groups.items() %}
     server {
-        listen   {{ port }} {{ protocol }};
+        listen   {{ port }} {% if protocol == 'udp' %}udp{% endif %};
         {% for service in services %}
         location /{{ service.name }} {
             proxy_pass {{ service.name }};
