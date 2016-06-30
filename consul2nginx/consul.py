@@ -30,7 +30,13 @@ class ConsulV1:
     def get_services(self):
         for name, tags in self._get_('catalog/services').json().items():
             instances = [ dict(i) for i in self.get_service_instances(name) ] # necessary due to simple_model
-            service = Service(name=name, tags=tags, instances=instances)
+
+            try:
+                port = int(name.split('-')[-1])
+            except ValueError:
+                port = 80
+
+            service = Service(name=name, port=port, tags=tags, instances=instances)
             yield service
 
     def get_service_instances(self, name):
@@ -75,9 +81,10 @@ class Service(simple_model.Model):
     }
     """
     name = simple_model.Attribute(str)
-    port = simple_model.Attribute(int, fallback=80)
+    port = simple_model.Attribute(int)
     tags = simple_model.AttributeList(str)
     instances = simple_model.AttributeList(ServiceInstance)
+
 Consul = ConsulV1
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4 fenc=utf-8
