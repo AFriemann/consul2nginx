@@ -22,7 +22,7 @@ http {
 
         {% for port_group, services in service_groups.get('tcp', []).items() %}{% for service in services %}
         location /{{ service.name }} {
-            proxy_pass {{ service.name }};
+            proxy_pass http://{{ service.name }};
         }{% endfor %}{% endfor %}
     }
 }{% endif %}
