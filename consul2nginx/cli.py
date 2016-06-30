@@ -63,7 +63,7 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
                     Nginx.test_config(config)
 
                 logger.info('writing new config to %s' % output)
-                Nginx.update_config(config, output, test)
+                Nginx.update_config(config, output)
 
                 if reload:
                     logger.info('reloading nginx')
