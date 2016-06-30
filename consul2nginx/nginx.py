@@ -36,7 +36,7 @@ class Nginx:
         return config != content
 
     @staticmethod
-    def create_config(path, services, test):
+    def create_config(path, services):
         config = Nginx.get_template('nginx.conf.jinja2').render(service_groups=Nginx.group_services(services))
 
         if config is None:
@@ -45,16 +45,15 @@ class Nginx:
         return config
 
     @staticmethod
-    def update_config(config, path, test):
-        if test:
-            logger.debug('testing created config file')
-            with tempfile.NamedTemporaryFile() as tmp:
-                tmp.write(config.encode())
-                Nginx.check_file(tmp.name)
-
+    def update_config(config, path):
         with open(path, 'wb') as result:
-            logger.debug('writing config to %s' % path)
             result.write(config.encode())
+
+    @staticmethod
+    def test_config(config):
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(config.encode())
+            Nginx.check_file(tmp.name)
 
     @staticmethod
     def group_services(services):

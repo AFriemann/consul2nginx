@@ -53,11 +53,16 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
 
         while (True):
             logger.debug('creating nginx config from consul')
-
-            config = Nginx.create_config(output, consul.get_services(), test)
+            config = Nginx.create_config(output, consul.get_services())
 
             if Nginx.different(config, output):
-                logger.info('config file changed')
+                logger.info('config file has changed')
+
+                if test:
+                    logger.info('testing new config')
+                    Nginx.test_config(config)
+
+                logger.info('writing new config to %s' % output)
                 Nginx.update_config(config, output, test)
 
                 if reload:
