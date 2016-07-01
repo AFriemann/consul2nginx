@@ -8,28 +8,30 @@ events {
     worker_connections 1024;
 }
 
-{% if service_groups.get('tcp', []) %}
 http {
-    {% for port_group, services in service_groups.get('tcp', []).items() %}{% for service in services %}
-    upstream {{ service.name }} {
-        least_conn;
-        {% for instance in service.instances %}
-        server {{ instance.Address }}:{{ instance.ServicePort }} max_fails=3 fail_timeout=60 weight=1;{% endfor %}
-    }{% endfor %}{% endfor %}
-
     server {
         listen 80;
 
-        {% for port_group, services in service_groups.get('tcp', []).items() %}{% for service in services %}
-        location /{{ service.name }} {
-            proxy_pass http://{{ service.name }};
-        }{% endfor %}{% endfor %}
-    }
-}{% endif %}
+        location / {
+            root html;
+            index index.html;
+        }
 
-{% if service_groups.get('udp', []) %}
+        {% for service in service_groups.get('http', []) %}
+        upstream {{ service.name }} {
+            least_conn;
+            {% for instance in service.instances %}
+            server {{ instance.Address }}:{{ instance.ServicePort }} max_fails=3 fail_timeout=60 weight=1;{% endfor %}
+        }
+
+        location /{{ service.name }} {
+            proxy_pass http://{{ service.name }}
+        }{% endfor %}
+    }
+}
+
 stream {
-    {% for port_group, services in service_groups.get('udp', []).items() %}{% for service in services %}
+    {% for port, service in service_groups.get('stream', {}).items() %}
     upstream {{ service.name }} {
         least_conn;
         {% for instance in service.instances %}
@@ -37,7 +39,7 @@ stream {
     }
 
     server {
-        listen {{ port_group }} udp;
+        listen {{ port }}{% if 'udp' in service.tags %} udp{% endif %};
         proxy_pass {{ service.name }};
-    }{% endfor %}{% endfor %}
-}{% endif %}
+    }{% endfor %}
+}

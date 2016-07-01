@@ -9,7 +9,7 @@
 
 """
 
-import click, logging, time
+import click, logging, time, os
 
 from .consul import Consul, Service
 from .nginx import Nginx, NginxException
@@ -34,7 +34,9 @@ def setup_logging(verbose, debug):
 @click.option('-h', '--host', default='127.0.0.1', help='consul host')
 @click.option('-p', '--port', default=8500, type=int, help='consul port')
 @click.option('-t', '--timeout', default=5, type=int, help='timeout for polling (only used when running as daemon)')
-def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
+@click.option('--overview/--no-overview', default=True, help='create overview file')
+@click.option('--nginx-root', default=os.path.expanduser('~nginx'))
+def main(test, reload, verbose, debug, daemonize, output, host, port, timeout, overview, nginx_root):
     try:
         setup_logging(verbose, debug)
 
@@ -53,7 +55,8 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
 
         while (True):
             logger.debug('creating nginx config from consul')
-            config = Nginx.create_config(output, consul.get_services())
+            services = list(consul.get_services())
+            config = Nginx.create_config(output, services)
 
             if Nginx.different(config, output):
                 logger.info('config file has changed')
@@ -64,6 +67,10 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout):
 
                 logger.info('writing new config to %s' % output)
                 Nginx.update_config(config, output)
+
+                if overview:
+                    logger.info('creating new overview file at %s' % nginx_root)
+                    Nginx.update_overview(Nginx.create_overview(services), nginx_root)
 
                 if reload:
                     logger.info('reloading nginx')

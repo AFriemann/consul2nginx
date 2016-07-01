@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+    <body>
+        <ul>HTTP Services</ul>
+        <br/>
+        {% for service in service_groups.get('http', []) %}
+        <a href="/{{ service.name }}">{{ service.name }}</a>{% endfor %}
+
+        <br/><br/>
+
+        <ul>TCP/UDP Services</ul>
+        {% for port, service in service_groups.get('stream', {}).items() %}
+        {{ service.name }} forwarded on port {{ port }}{% if 'udp' in service.tags %}/udp{% endif %}{% endfor %}
+    </body>
+</html>

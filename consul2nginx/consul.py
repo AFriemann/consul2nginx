@@ -29,15 +29,15 @@ class ConsulV1:
 
     def get_services(self):
         for name, tags in self._get_('catalog/services').json().items():
-            instances = [ dict(i) for i in self.get_service_instances(name) ] # necessary due to simple_model
-
             try:
                 port = int(name.split('-')[-1])
             except ValueError:
-                port = 80
+                logger.info('ignoring service %s due to unavailable port information' % name)
+                continue
 
-            service = Service(name=name, port=port, tags=tags, instances=instances)
-            yield service
+            instances = [ dict(i) for i in self.get_service_instances(name) ] # necessary due to simple_model
+
+            yield Service(name=name, port=port, tags=tags, instances=instances)
 
     def get_service_instances(self, name):
         for entry in self._get_('catalog/service/%s' % name).json():
