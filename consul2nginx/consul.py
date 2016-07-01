@@ -24,6 +24,9 @@ class ConsulV1:
     def _get_(self, endpoint):
         try:
             return requests.get('http://%s:%s/v1/%s' % (self._host, self._port, endpoint))
+        except ValueError as e:
+            logger.warning('failed to parse response data, is this really a consul server?')
+            raise ConsulException(endpoint, e)
         except requests.exceptions.ConnectionError as e:
             raise ConsulException(endpoint, e)
 

@@ -11,6 +11,7 @@
 
 import click, logging, time, os
 
+from . import __version__
 from .consul import Consul, Service, ConsulException
 from .nginx import Nginx, NginxException
 
@@ -25,6 +26,7 @@ def setup_logging(verbose, debug):
         logging.basicConfig(level=logging.WARNING)
 
 @click.command()
+@click.version_option(version=__version__)
 @click.option('--test/--no-test', default=True, help='test the generated file before reloading nginx')
 @click.option('--reload/--no-reload', default=True, help='reload nginx after file generation')
 @click.option('-v', '--verbose/--no-verbose', default=False, help='print verbose log output')
