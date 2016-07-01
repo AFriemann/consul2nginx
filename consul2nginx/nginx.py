@@ -79,7 +79,7 @@ class Nginx:
 
         for service in services:
             if 'http' in service.tags:
-                grouped_services['http'] += service
+                grouped_services['http'].append(service)
             else:
                 while service.port in grouped_services['stream']:
                     service.port += 1

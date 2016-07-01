@@ -28,9 +28,11 @@ class ConsulV1:
             logger.warning('failed to parse response data, is this really a consul server?')
             raise ConsulException(endpoint, e)
         except requests.exceptions.ConnectionError as e:
+            logger.error(e)
             raise ConsulException(endpoint, e)
 
     def get_services(self):
+        services = []
         for name, tags in self._get_('catalog/services').json().items():
             try:
                 port = int(name.split('-')[-1])
@@ -38,13 +40,16 @@ class ConsulV1:
                 logger.info('ignoring service %s due to unavailable port information' % name)
                 continue
 
-            instances = [ dict(i) for i in self.get_service_instances(name) ] # necessary due to simple_model
+            instances = [ dict(i) for i in self.get_service_instances(name) ] # necessary due to simple_model right now
+            services.append(Service(name=name, port=port, tags=tags, instances=instances))
 
-            yield Service(name=name, port=port, tags=tags, instances=instances)
+        return services
 
     def get_service_instances(self, name):
+        instances = []
         for entry in self._get_('catalog/service/%s' % name).json():
-            yield ServiceInstance(**entry)
+            instances.append(ServiceInstance(**entry))
+        return instances
 
 class ServiceInstance(simple_model.Model):
     """

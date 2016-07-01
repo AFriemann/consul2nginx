@@ -57,6 +57,8 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout, o
                 services = list(consul.get_services())
                 config = Nginx.create_config(output, services)
 
+                logger.debug('checking for differences with current file')
+
                 if Nginx.different(config, output):
                     logger.info('config file has changed')
 
