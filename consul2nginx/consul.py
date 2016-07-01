@@ -13,19 +13,19 @@ import requests, simple_model, json, logging
 
 logger = logging.getLogger(__name__)
 
+class ConsulException(Exception):
+    pass
+
 class ConsulV1:
     def __init__(self, host, port):
         self._host = host
         self._port = port
 
     def _get_(self, endpoint):
-        return requests.get('http://%s:%s/v1/%s' % (self._host, self._port, endpoint))
-
-    def check(self):
         try:
-            return self._get_('agent/self').status_code == 200
-        except requests.exceptions.ConnectionError:
-            return False
+            return requests.get('http://%s:%s/v1/%s' % (self._host, self._port, endpoint))
+        except requests.exceptions.ConnectionError as e:
+            raise ConsulException(endpoint, e)
 
     def get_services(self):
         for name, tags in self._get_('catalog/services').json().items():
