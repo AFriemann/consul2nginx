@@ -34,13 +34,17 @@ class ConsulV1:
     def get_services(self):
         services = []
         for name, tags in self._get_('catalog/services').json().items():
+            logger.debug('parsing %s with tags: %s' % (name, tags))
             try:
                 port = int(name.split('-')[-1])
             except ValueError:
                 logger.info('ignoring service %s due to unavailable port information' % name)
                 continue
 
-            instances = [ dict(i) for i in self.get_service_instances(name) ] # necessary due to simple_model right now
+            logger.debug('registering %s for port %s' % (name, port))
+
+            instances = [ dict(i) for i in self.get_healthy_service_instances(name) ] # necessary due to simple_model right now
+
             services.append(Service(name=name, port=port, tags=tags, instances=instances))
 
         return services
@@ -49,6 +53,61 @@ class ConsulV1:
         instances = []
         for entry in self._get_('catalog/service/%s' % name).json():
             instances.append(ServiceInstance(**entry))
+        return instances
+
+    def get_healthy_service_instances(self, name):
+        """
+        [
+            {
+                "Node": {
+                    "Node": "docker-swarm-consul-ip-10-0-11-179",
+                    "Address": "10.0.11.179",
+                    "TaggedAddresses": {
+                        "wan": "10.0.11.179"
+                    },
+                    "CreateIndex": 3,
+                    "ModifyIndex": 4
+                },
+                "Service": {
+                    "ID": "consul",
+                    "Service": "consul",
+                    "Tags": [],
+                    "Address": "",
+                    "Port": 8300,
+                    "EnableTagOverride": false,
+                    "CreateIndex": 3,
+                    "ModifyIndex": 4
+                },
+                "Checks": [
+                    {
+                        "Node": "docker-swarm-consul-ip-10-0-11-179",
+                        "CheckID": "serfHealth",
+                        "Name": "Serf Health Status",
+                        "Status": "passing",
+                        "Notes": "",
+                        "Output": "Agent alive and reachable",
+                        "ServiceID": "",
+                        "ServiceName": "",
+                        "CreateIndex": 3,
+                        "ModifyIndex": 3
+                    }
+                ]
+            }
+        ]
+        """
+        instances = []
+        for entry in self._get_('health/service/%s?passing' % name).json():
+            instance = {
+                'Node': entry.get('Node').get('Node'),
+                'Address': entry.get('Node').get('Address'),
+                'ServiceID': entry.get('Service').get('ID'),
+                'ServiceName': entry.get('Service').get('Service'),
+                'ServiceTags': entry.get('Service').get('Tags', []) or [],
+                'ServicePort': entry.get('Service').get('Port')
+            }
+            instances.append(ServiceInstance(**instance))
+
+        logger.debug('got %s healthy instances for %s' % (len(instances), name))
         return instances
 
 class ServiceInstance(simple_model.Model):

@@ -51,10 +51,14 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout, o
         if daemonize:
             logger.info('checking %s:%s every %ss' % (host, port, timeout))
 
-        while True:
+        running = True
+
+        while running:
             try:
-                logger.debug('creating nginx config from consul')
+                logger.debug('requesting services from consul')
                 services = list(consul.get_services())
+
+                logger.debug('creating nginx config with services')
                 config = Nginx.create_config(output, services)
 
                 logger.debug('checking for differences with current file')
@@ -80,16 +84,19 @@ def main(test, reload, verbose, debug, daemonize, output, host, port, timeout, o
                 logger.error('failed to connect to consul API via %s:%s: %s', host, port, e)
             except NginxException as e:
                 logger.error(e)
+            except Exception as e:
+                logger.exception(e)
+                raise e
             finally:
                 if daemonize:
                     time.sleep(timeout)
                 else:
-                    break
-
-        return 0
+                    logger.info('terminating')
+                    running = False
     except Exception as e:
         logger.exception(e)
         return 1
+    return 0
 
 if __name__ == '__main__':
     import sys
