@@ -31,6 +31,7 @@ http {
     }
 }
 
+{% if service_groups.get('stream', {}) %}
 stream {
     {% for port, service in service_groups.get('stream', {}).items() %}
     upstream {{ service.name }} {
@@ -43,4 +44,4 @@ stream {
         listen {{ port }}{% if 'udp' in service.tags %} udp{% endif %};
         proxy_pass {{ service.name }};
     }{% endfor %}
-}
+}{% endif %}
