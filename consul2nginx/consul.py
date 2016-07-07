@@ -45,7 +45,11 @@ class ConsulV1:
 
             instances = [ dict(i) for i in self.get_healthy_service_instances(name) ] # necessary due to simple_model right now
 
-            services.append(Service(name=name, port=port, tags=tags, instances=instances))
+            if len(instances) > 0:
+                services.append(Service(name=name, port=port, tags=tags, instances=instances))
+            else:
+                logger.info('ignoring service %s due to no available service instances' % name)
+                continue
 
         return services
 
