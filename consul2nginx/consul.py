@@ -23,7 +23,7 @@ class ConsulV1:
 
     def _get_(self, endpoint):
         try:
-            return requests.get('http://%s:%s/v1/%s' % (self._host, self._port, endpoint))
+            return requests.get('http://%s:%s/v1/%s' % (self._host, self._port, endpoint)).json()
         except ValueError as e:
             logger.warning('failed to parse response data, is this really a consul server?')
             raise ConsulException(endpoint, e)
@@ -33,7 +33,7 @@ class ConsulV1:
 
     def get_services(self):
         services = []
-        for name, tags in self._get_('catalog/services').json().items():
+        for name, tags in self._get_('catalog/services').items():
             logger.debug('parsing %s with tags: %s' % (name, tags))
             try:
                 port = int(name.split('-')[-1])
@@ -51,7 +51,7 @@ class ConsulV1:
 
     def get_service_instances(self, name):
         instances = []
-        for entry in self._get_('catalog/service/%s' % name).json():
+        for entry in self._get_('catalog/service/%s' % name):
             instances.append(ServiceInstance(**entry))
         return instances
 
@@ -96,7 +96,7 @@ class ConsulV1:
         ]
         """
         instances = []
-        for entry in self._get_('health/service/%s?passing' % name).json():
+        for entry in self._get_('health/service/%s?passing' % name):
             instance = {
                 'Node': entry.get('Node').get('Node'),
                 'Address': entry.get('Node').get('Address'),
